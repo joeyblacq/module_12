@@ -24,6 +24,8 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
      *         Each Object array corresponds to the restaurant's information.
      *         An empty list is returned if no restaurant is found with the specified ID.
      */
+
+    //  example from ET video taking away the single the qotatuion marks ane plus sign using 3 qoutation marks
     @Query(nativeQuery = true, value =
         "SELECT r.id, r.name, r.price_range, COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating " +
         "FROM restaurants r " +
