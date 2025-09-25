@@ -13,13 +13,31 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer> {
+    
+    // Standard derived query
     Optional<Product> findById(int id);
 
-    @Query(value = "SELECT * FROM products WHERE restaurant_id = :restaurantId ORDER BY id DESC", nativeQuery = true)
+    // Custom SELECT query using Text Blocks
+    @Query(
+        nativeQuery = true,
+        value = """
+            SELECT *
+            FROM products
+            WHERE restaurant_id = :restaurantId
+            ORDER BY id DESC
+        """
+    )
     List<Product> findProductsByRestaurantId(@Param("restaurantId") int restaurantId);
 
+    // Custom DELETE query using Text Blocks
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM products WHERE restaurant_id = :restaurantId", nativeQuery = true)
+    @Query(
+        nativeQuery = true,
+        value = """
+            DELETE FROM products
+            WHERE restaurant_id = :restaurantId
+        """
+    )
     void deleteProductsByRestaurantId(@Param("restaurantId") int restaurantId);
 }
