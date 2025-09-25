@@ -9,15 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AddressService {
     private final AddressRepository repo;
-
-    public AddressService(AddressRepository repo) {
-        this.repo = repo;
-    }
+    public AddressService(AddressRepository repo) { this.repo = repo; }
 
     @Transactional
     public Address create(ApiAddressDto dto) {
-        repo.saveAddress(dto.getStreetAddress(), dto.getCity(), dto.getPostalCode());
-        int id = repo.getLastInsertedId();
-        return repo.findById(id).orElseThrow();
+        Address a = new Address();
+        a.setStreetAddress(dto.getStreetAddress());
+        a.setCity(dto.getCity());
+        a.setPostalCode(dto.getPostalCode());
+        return repo.save(a);
     }
 }
