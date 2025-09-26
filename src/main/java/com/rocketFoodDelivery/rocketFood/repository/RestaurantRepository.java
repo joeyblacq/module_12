@@ -12,6 +12,9 @@ import java.util.Optional;
 @Repository
 public interface RestaurantRepository extends JpaRepository<Restaurant, Integer> {
 
+    /* =========
+       ANALYTICS
+       ========= */
     @Query(value = """
         SELECT r.id,
                r.name,
@@ -38,6 +41,9 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
     List<Object[]> findRestaurantsByRatingAndPriceRange(@Param("rating") Integer rating,
                                                         @Param("priceRange") Integer priceRange);
 
+    /* =====================
+       NATIVE CREATE / READ
+       ===================== */
     @Modifying
     @Transactional
     @Query(value = """
@@ -63,6 +69,9 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
         """, nativeQuery = true)
     Optional<Restaurant> findRestaurantById(@Param("id") int id);
 
+    /* ======================
+       NATIVE UPDATE / DELETE
+       ====================== */
     @Modifying
     @Transactional
     @Query(value = """
@@ -85,4 +94,10 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
          WHERE id = :id
         """, nativeQuery = true)
     int deleteRestaurantById(@Param("id") int id);
+
+    /* ===========================
+       LIST (for /api/restaurants)
+       =========================== */
+    @Query(value = "SELECT * FROM restaurants ORDER BY id DESC", nativeQuery = true)
+    List<Restaurant> findAllOrderByIdDesc();
 }
