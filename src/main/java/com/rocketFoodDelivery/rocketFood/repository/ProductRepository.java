@@ -11,25 +11,16 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
-    // existing
+    // GET /api/products?restaurant={id} (native)
     @Query(value = """
         SELECT *
           FROM products
          WHERE restaurant_id = :restaurantId
-         ORDER BY id
+         ORDER BY id DESC
         """, nativeQuery = true)
-    List<Product> findByRestaurantId(@Param("restaurantId") int restaurantId);
+    List<Product> findProductsByRestaurantId(@Param("restaurantId") int restaurantId);
 
-    // NEW: matches your call site (Integer param + method name)
-    @Query(value = """
-        SELECT *
-          FROM products
-         WHERE restaurant_id = :restaurantId
-         ORDER BY id
-        """, nativeQuery = true)
-    List<Product> findProductsByRestaurantId(@Param("restaurantId") Integer restaurantId);
-
-    // existing (if you have it)
+    // DELETE /api/products?restaurant={id} (native)
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query(value = """
