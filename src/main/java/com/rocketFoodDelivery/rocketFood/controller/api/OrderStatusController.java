@@ -1,5 +1,6 @@
 // ===================== OrderStatusController.java =====================
-package com.rocketFoodDelivery.rocketFood.controller;
+package com.rocketFoodDelivery.rocketFood.controller.api;
+
 
 import com.rocketFoodDelivery.rocketFood.repository.OrderRepository;
 import jakarta.validation.constraints.Min;
