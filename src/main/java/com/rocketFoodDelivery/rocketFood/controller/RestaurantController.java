@@ -28,8 +28,8 @@ public class RestaurantController {
     /**
      * GET /api/restaurants
      * Optional filters:
-     *   - rating (Integer)
-     *   - price_range (Integer)
+     * - rating (Integer)
+     * - price_range (Integer)
      * Always returns a list of ApiRestaurantDto with computed rating.
      */
     @GetMapping("/restaurants")
