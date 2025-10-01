@@ -16,11 +16,14 @@ import lombok.NoArgsConstructor;
 public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-    @Column(name = "street_address", nullable = false)
+    private Integer id;
+
+    @Column(name = "street_address", nullable = false, length = 255)
     private String streetAddress;
-    @Column(nullable = false)
+
+    @Column(nullable = false, length = 100)
     private String city;
-    @Column(name = "postal_code", nullable = false)
+
+    @Column(name = "postal_code", nullable = false, length = 20)
     private String postalCode;
 }
