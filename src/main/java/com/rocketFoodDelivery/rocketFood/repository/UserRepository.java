@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,4 +22,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
     // Used by auth (if needed)
     Optional<UserEntity> findByEmail(String email);
+
+    // Find all users ordered by ID descending
+    List<UserEntity> findAllByOrderByIdDesc();
 }

@@ -1,101 +1,128 @@
 package com.rocketFoodDelivery.rocketFood.controller.api;
 
 import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
-import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
-import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
-import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
-import com.rocketFoodDelivery.rocketFood.exception.*;
-
-import jakarta.validation.Valid;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import com.rocketFoodDelivery.rocketFood.models.Address;
+import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import com.rocketFoodDelivery.rocketFood.models.UserEntity;
+import com.rocketFoodDelivery.rocketFood.repository.AddressRepository;
+import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
+import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.Optional;
+import java.util.List;
 
 @RestController
+@RequestMapping("/api/restaurants")
+@CrossOrigin
 public class RestaurantApiController {
-    private final RestaurantService restaurantService;
 
-    @Autowired
-    public RestaurantApiController(RestaurantService restaurantService) {
-        this.restaurantService = restaurantService;
+    private final RestaurantRepository restaurantRepository;
+    private final UserRepository userRepository;
+    private final AddressRepository addressRepository;
+
+    public RestaurantApiController(RestaurantRepository restaurantRepository,
+                                   UserRepository userRepository,
+                                   AddressRepository addressRepository) {
+        this.restaurantRepository = restaurantRepository;
+        this.userRepository = userRepository;
+        this.addressRepository = addressRepository;
     }
 
-    /**
-     * Creates a new restaurant.
-     * Returns 201 Created with Location header on success.
-     */
-    @PostMapping("/api/restaurants")
-    public ResponseEntity<Object> createRestaurant(@Valid @RequestBody ApiCreateRestaurantDto restaurant) {
-        Optional<ApiCreateRestaurantDto> created = restaurantService.createRestaurant(restaurant);
-        if (created.isEmpty()) {
-            throw new BadRequestException("Invalid restaurant payload or user/address missing");
-        }
-        URI location = URI.create("/api/restaurants/" + created.get().getId());
-        return ResponseEntity.created(location).body(created.get());
+    // GET /api/restaurants
+    @GetMapping
+    public ResponseEntity<List<Restaurant>> list() {
+        List<Restaurant> all = restaurantRepository.findAllOrderByIdDesc();
+        return ResponseEntity.ok(all);
     }
 
-    /**
-     * Deletes a restaurant by ID.
-     * Returns 204 No Content on success.
-     */
-    @DeleteMapping("/api/restaurants/{id}")
-    public ResponseEntity<Object> deleteRestaurant(@PathVariable int id){
-        // Guard: 404 if it does not exist
-        if (restaurantService.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException(String.format("Restaurant with id %d not found", id));
-        }
-        restaurantService.deleteRestaurant(id);
+    // GET /api/restaurants/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<?> one(@PathVariable int id) {
+        return restaurantRepository.findRestaurantById(id)
+                .or(() -> restaurantRepository.findById(id))
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // POST /api/restaurants
+    @PostMapping
+    public ResponseEntity<?> create(@RequestBody /*@jakarta.validation.Valid*/ ApiCreateRestaurantDto dto) {
+        int userId = resolveUserId(dto);
+        int addressId = resolveOrCreateAddressId(dto);
+
+        if (userId == 0)    return ResponseEntity.badRequest().body(err("User not found"));
+        if (addressId == 0) return ResponseEntity.badRequest().body(err("Address not found or invalid"));
+
+        UserEntity owner = userRepository.findById(userId).orElse(null);
+        Address addr = addressRepository.findById(addressId).orElse(null);
+        if (owner == null)  return ResponseEntity.badRequest().body(err("User not found"));
+        if (addr == null)   return ResponseEntity.badRequest().body(err("Address not found"));
+
+        int inserted = restaurantRepository.saveRestaurant(
+                owner.getId(),
+                addr.getId(),
+                dto.getName(),
+                dto.getPriceRange(),
+                dto.getPhone(),
+                dto.getEmail()
+        );
+        if (inserted <= 0) return ResponseEntity.internalServerError().body(err("Insert failed"));
+
+        int newId = restaurantRepository.getLastInsertedId();
+        return restaurantRepository.findRestaurantById(newId)
+                .<ResponseEntity<?>>map(saved ->
+                        ResponseEntity.created(URI.create("/api/restaurants/" + saved.getId())).body(saved))
+                .orElseGet(() -> ResponseEntity.status(500).body(err("Created restaurant not found")));
+    }
+
+    // PUT /api/restaurants/{id}
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(@PathVariable int id, @RequestBody /*@jakarta.validation.Valid*/ ApiCreateRestaurantDto dto) {
+        int updated = restaurantRepository.updateRestaurant(
+                id,
+                dto.getName(),
+                dto.getPriceRange(),
+                dto.getPhone()
+        );
+        if (updated <= 0) return ResponseEntity.notFound().build();
+
+        return restaurantRepository.findRestaurantById(id)
+                .or(() -> restaurantRepository.findById(id))
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(500).body(err("Updated restaurant not found")));
+    }
+
+    // DELETE /api/restaurants/{id}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable int id) {
+        int deleted = restaurantRepository.deleteRestaurantById(id);
+        if (deleted <= 0) return ResponseEntity.notFound().build();
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Updates an existing restaurant by ID.
-     * Uses name/priceRange/phone (per service behavior).
-     * Returns 200 OK with updated payload.
-     */
-    @PutMapping("/api/restaurants/{id}")
-    public ResponseEntity<Object> updateRestaurant(
-            @PathVariable("id") int id,
-            @Valid @RequestBody ApiCreateRestaurantDto restaurantUpdateData,
-            BindingResult result
-    ) {
-        if (result.hasErrors()) {
-            throw new BadRequestException("Validation failed for update payload");
+    // ---------- helpers (NO ApiUserDto needed) ----------
+
+    private int resolveUserId(ApiCreateRestaurantDto dto) {
+        // Only use flat ID — this avoids the missing ApiUserDto type completely
+        return (dto.getUserId() > 0) ? dto.getUserId() : 0;
+    }
+
+    private int resolveOrCreateAddressId(ApiCreateRestaurantDto dto) {
+        if (dto.getAddressId() > 0) return dto.getAddressId();
+        if (dto.getAddress() != null && dto.getAddress().getId() > 0) return dto.getAddress().getId();
+
+        if (dto.getAddress() != null) {
+            Address a = new Address();
+            a.setStreetAddress(dto.getAddress().getStreetAddress());
+            a.setCity(dto.getAddress().getCity());
+            a.setPostalCode(dto.getAddress().getPostalCode());
+            return addressRepository.save(a).getId();
         }
-
-        Optional<ApiCreateRestaurantDto> updated = restaurantService.updateRestaurant(id, restaurantUpdateData);
-        if (updated.isEmpty()) {
-            throw new ResourceNotFoundException(String.format("Restaurant with id %d not found", id));
-        }
-        return ResponseBuilder.buildOkResponse(updated.get());
+        return 0;
     }
 
-    /**
-     * Retrieves restaurant details with average rating.
-     */
-    @GetMapping("/api/restaurants/{id}")
-    public ResponseEntity<Object> getRestaurantById(@PathVariable int id) {
-        Optional<ApiRestaurantDto> restaurantWithRatingOptional = restaurantService.findRestaurantWithAverageRatingById(id);
-        if (!restaurantWithRatingOptional.isPresent())
-            throw new ResourceNotFoundException(String.format("Restaurant with id %d not found", id));
-        return ResponseBuilder.buildOkResponse(restaurantWithRatingOptional.get());
-    }
-
-    /**
-     * Lists restaurants filtered by optional rating and price_range.
-     */
-    @GetMapping("/api/restaurants")
-    public ResponseEntity<Object> getAllRestaurants(
-        @RequestParam(name = "rating", required = false) Integer rating,
-        @RequestParam(name = "price_range", required = false) Integer priceRange
-    ) {
-        return ResponseBuilder.buildOkResponse(
-            restaurantService.findRestaurantsByRatingAndPriceRange(rating, priceRange)
-        );
-    }
+    private static ErrorMsg err(String m) { return new ErrorMsg(m); }
+    private record ErrorMsg(String error) { }
 }

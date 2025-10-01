@@ -42,7 +42,7 @@ public class RestaurantApiControllerTest {
     @Test
     public void testCreateRestaurant_Success() throws Exception {
         ApiAddressDto inputAddress = new ApiAddressDto(1, "123 Wellington St.", "Montreal", "H1H2H2");
-        ApiCreateRestaurantDto inputRestaurant = new ApiCreateRestaurantDto(1, 4, "Villa wellington", 2, "5144154415", "reservations@villawellington.com", inputAddress);
+        ApiCreateRestaurantDto inputRestaurant = new ApiCreateRestaurantDto(1, 4, 1, "Villa wellington", 2, "5144154415", "reservations@villawellington.com", inputAddress);
 
         // Mock service behavior
         when(restaurantService.createRestaurant(any())).thenReturn(Optional.of(inputRestaurant));

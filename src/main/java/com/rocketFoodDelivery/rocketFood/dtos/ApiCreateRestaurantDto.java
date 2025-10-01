@@ -21,6 +21,9 @@ public class ApiCreateRestaurantDto {
     @JsonProperty("user_id")
     private int userId;
 
+    @JsonProperty("address_id")
+    private int addressId;
+
     private String name;
 
     @JsonProperty("price_range")

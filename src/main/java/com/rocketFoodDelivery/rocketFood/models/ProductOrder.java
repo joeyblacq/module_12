@@ -14,27 +14,28 @@ import org.hibernate.annotations.OnDeleteAction;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "product_orders" , uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"product_id", "order_id"})
-})
+@Table(name = "product_orders",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "order_id"}))
 public class ProductOrder {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne(optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne(optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     @Min(1)
+    @Column(nullable = false)
     private Integer product_quantity;
+
     @Min(0)
     private Integer product_unit_cost;
 
@@ -46,9 +47,6 @@ public class ProductOrder {
     }
 
     private boolean productBelongsToRestaurant() {
-        if (!product.getRestaurant().equals(order.getRestaurant())) {
-            return false;
-        }
-        return true;
+        return product.getRestaurant().equals(order.getRestaurant());
     }
 }
