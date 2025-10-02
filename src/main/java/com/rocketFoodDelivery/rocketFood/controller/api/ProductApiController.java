@@ -19,24 +19,25 @@ public class ProductApiController {
     }
 
     /**
-     * SQL 5 – GET /api/products?restaurant={id}
-     * Native SQL in repository.
+     * API 7 – GET /api/products
+     * When no query params are provided, return ALL products (newest first).
+     * If ?restaurant={id} is provided, return products for that restaurant (SQL 5).
      */
     @GetMapping
-    public ResponseEntity<List<Product>> findByRestaurant(@RequestParam("restaurant") int restaurantId) {
-        List<Product> products = productService.listByRestaurantId(restaurantId);
+    public ResponseEntity<List<Product>> list(
+            @RequestParam(value = "restaurant", required = false) Integer restaurantId) {
+
+        List<Product> products = (restaurantId == null)
+                ? productService.listAll()
+                : productService.listByRestaurantId(restaurantId);
+
         return ResponseEntity.ok(products);
     }
 
     /**
      * SQL 6 – DELETE /api/products?restaurant={id}
-     * Native SQL in repository. Returns 204 with X-Deleted-Count header.
+     * (Keep your existing DELETE endpoint if already present elsewhere)
      */
-    @DeleteMapping
-    public ResponseEntity<Void> deleteByRestaurant(@RequestParam("restaurant") int restaurantId) {
-        int deleted = productService.deleteByRestaurantId(restaurantId);
-        return ResponseEntity.noContent()
-                .header("X-Deleted-Count", String.valueOf(deleted))
-                .build();
-    }
+    // @DeleteMapping
+    // public ResponseEntity<Void> deleteByRestaurant(@RequestParam("restaurant") int restaurantId) { ... }
 }
