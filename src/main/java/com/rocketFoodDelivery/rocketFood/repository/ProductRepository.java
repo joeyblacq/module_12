@@ -1,21 +1,35 @@
 package com.rocketFoodDelivery.rocketFood.repository;
 
 import com.rocketFoodDelivery.rocketFood.models.Product;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
-    // Standard Spring Data derived query
-    List<Product> findByRestaurantId(Integer restaurantId);
+    /* ===============================
+       NATIVE READ for SQL 5 (GET)
+       =============================== */
+    @Query(value = """
+        SELECT *
+          FROM products
+         WHERE restaurant_id = :restaurantId
+         ORDER BY id DESC
+        """, nativeQuery = true)
+    List<Product> findProductsByRestaurantIdNative(@Param("restaurantId") int restaurantId);
 
-    // Alias to satisfy existing code that calls findProductsByRestaurantId(...)
-    @Query("SELECT p FROM Product p WHERE p.restaurant.id = :restaurantId")
-    List<Product> findProductsByRestaurantId(@Param("restaurantId") Integer restaurantId);
-    List<Product> deleteProductsByRestaurantId(@Param("restaurantId") Integer restaurantId);
+    /* =================================
+       NATIVE DELETE for SQL 6 (DELETE)
+       ================================= */
+    @Modifying
+    @Transactional
+    @Query(value = """
+        DELETE FROM products
+         WHERE restaurant_id = :restaurantId
+        """, nativeQuery = true)
+    int deleteProductsByRestaurantIdNative(@Param("restaurantId") int restaurantId);
 }
