@@ -11,7 +11,16 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
-    /* ===== SQL 5 (filtered) ===== */
+    // === Compatibility for DataSeeder ===
+    @Query(value = """
+        SELECT *
+          FROM products
+         WHERE restaurant_id = :restaurantId
+         ORDER BY id DESC
+        """, nativeQuery = true)
+    List<Product> findByRestaurantId(@Param("restaurantId") int restaurantId);
+
+    // === Our explicit native methods ===
     @Query(value = """
         SELECT *
           FROM products
@@ -20,7 +29,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
         """, nativeQuery = true)
     List<Product> findProductsByRestaurantIdNative(@Param("restaurantId") int restaurantId);
 
-    /* ===== API 7 (unfiltered) ===== */
     @Query(value = """
         SELECT *
           FROM products
@@ -28,7 +36,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
         """, nativeQuery = true)
     List<Product> findAllOrderByIdDescNative();
 
-    /* ===== SQL 6 (DELETE by restaurant) ===== */
     @Modifying
     @Transactional
     @Query(value = """
