@@ -15,13 +15,13 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
-    /** GET /api/products?restaurant={id} (SQL 5) */
-    public List<Product> listByRestaurantId(int restaurantId) {
-        return productRepository.findProductsByRestaurantIdNative(restaurantId);
+    /** API 7 – GET /api/products (no filter) */
+    public List<Product> listAll() {
+        return productRepository.findAllOrderByIdDescNative();
     }
 
-    /** DELETE /api/products?restaurant={id} (SQL 6) — returns number deleted */
-    public int deleteByRestaurantId(int restaurantId) {
-        return productRepository.deleteProductsByRestaurantIdNative(restaurantId);
+    /** SQL 5 – GET /api/products?restaurant={id} */
+    public List<Product> listByRestaurantId(int restaurantId) {
+        return productRepository.findProductsByRestaurantIdNative(restaurantId);
     }
 }
