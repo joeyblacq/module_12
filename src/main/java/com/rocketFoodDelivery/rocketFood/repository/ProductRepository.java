@@ -4,6 +4,7 @@ import com.rocketFoodDelivery.rocketFood.models.Product;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -26,4 +27,13 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
          ORDER BY id DESC
         """, nativeQuery = true)
     List<Product> findAllOrderByIdDescNative();
+
+    /* ===== SQL 6 (DELETE by restaurant) ===== */
+    @Modifying
+    @Transactional
+    @Query(value = """
+        DELETE FROM products
+         WHERE restaurant_id = :restaurantId
+        """, nativeQuery = true)
+    int deleteProductsByRestaurantId(@Param("restaurantId") int restaurantId);
 }
