@@ -24,4 +24,9 @@ public class ProductService {
     public List<Product> listByRestaurantId(int restaurantId) {
         return productRepository.findProductsByRestaurantIdNative(restaurantId);
     }
+
+    /** SQL 6 – DELETE /api/products?restaurant={id} — returns deleted row count */
+    public int deleteByRestaurantId(int restaurantId) {
+        return productRepository.deleteProductsByRestaurantId(restaurantId);
+    }
 }
