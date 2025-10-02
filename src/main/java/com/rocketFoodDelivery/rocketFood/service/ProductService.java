@@ -1,22 +1,27 @@
 package com.rocketFoodDelivery.rocketFood.service;
 
+import com.rocketFoodDelivery.rocketFood.models.Product;
 import com.rocketFoodDelivery.rocketFood.repository.ProductRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 
 @Service
 public class ProductService {
-    @PersistenceContext
-    private EntityManager entityManager;
-    ProductRepository productRepository;
 
-    @Autowired
-    public ProductService(ProductRepository productRepository){
+    private final ProductRepository productRepository;
+
+    public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
 
+    /** GET /api/products?restaurant={id} (SQL 5) */
+    public List<Product> listByRestaurantId(int restaurantId) {
+        return productRepository.findProductsByRestaurantIdNative(restaurantId);
+    }
 
+    /** DELETE /api/products?restaurant={id} (SQL 6) — returns number deleted */
+    public int deleteByRestaurantId(int restaurantId) {
+        return productRepository.deleteProductsByRestaurantIdNative(restaurantId);
+    }
 }
