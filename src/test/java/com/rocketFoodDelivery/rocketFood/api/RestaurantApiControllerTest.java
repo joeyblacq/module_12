@@ -32,7 +32,7 @@ public class RestaurantApiControllerTest {
     @MockBean
     private RestaurantService restaurantService;
 
-    // keep if your controller touches it via the service layer; harmless to mock
+    // Keep if your controller indirectly touches it; harmless to mock
     @MockBean
     private UserRepository userRepository;
 
@@ -41,14 +41,13 @@ public class RestaurantApiControllerTest {
     // -------------------- POST /api/restaurants --------------------
 
     @Test
-    @DisplayName("POST /api/restaurants — Success returns 201 and data envelope")
+    @DisplayName("POST /api/restaurants — 201 Created and data envelope")
     public void testCreateRestaurant_Success() throws Exception {
         ApiAddressDto inputAddress = new ApiAddressDto(1, "123 Wellington St.", "Montreal", "H1H2H2");
         ApiCreateRestaurantDto inputRestaurant =
                 new ApiCreateRestaurantDto(1, 4, 1, "Villa wellington", 2, "5144154415",
                         "reservations@villawellington.com", inputAddress);
 
-        // Service returns created DTO
         when(restaurantService.createRestaurant(any())).thenReturn(Optional.of(inputRestaurant));
 
         mockMvc.perform(
@@ -71,10 +70,9 @@ public class RestaurantApiControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/restaurants — Failure returns 400 on invalid payload")
+    @DisplayName("POST /api/restaurants — 400 invalid payload")
     public void testCreateRestaurant_Failure_InvalidPayload() throws Exception {
-        // Build an invalid payload (missing required fields) and force service to fail
-        ApiCreateRestaurantDto bad = new ApiCreateRestaurantDto(); // empty/invalid by design
+        ApiCreateRestaurantDto bad = new ApiCreateRestaurantDto(); // missing fields
         when(restaurantService.createRestaurant(any())).thenReturn(Optional.empty());
 
         mockMvc.perform(
@@ -87,10 +85,30 @@ public class RestaurantApiControllerTest {
                 org.hamcrest.Matchers.containsStringIgnoringCase("invalid")));
     }
 
+    @Test
+    @DisplayName("POST /api/restaurants — 404 related entities not found")
+    public void testCreateRestaurant_Failure_NotFound() throws Exception {
+        ApiCreateRestaurantDto payload = new ApiCreateRestaurantDto(
+            0, 9999, 8888, "Ghost Kitchen", 2, "555-0000", "ghost@example.com",
+            new ApiAddressDto(8888, "N/A", "N/A", "N/A")
+        );
+
+        when(restaurantService.createRestaurant(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(
+                MockMvcRequestBuilders.post("/api/restaurants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(payload))
+        )
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message",
+                org.hamcrest.Matchers.containsStringIgnoringCase("not found")));
+    }
+
     // -------------------- PUT /api/restaurants/{id} --------------------
 
     @Test
-    @DisplayName("PUT /api/restaurants/{id} — Success returns 200 and updated data")
+    @DisplayName("PUT /api/restaurants/{id} — 200 OK and updated data")
     public void testUpdateRestaurant_Success() throws Exception {
         int restaurantId = 1;
         ApiCreateRestaurantDto updatedData = new ApiCreateRestaurantDto();
@@ -115,11 +133,11 @@ public class RestaurantApiControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/restaurants/{id} — Failure returns 404 when not found")
+    @DisplayName("PUT /api/restaurants/{id} — 404 not found")
     public void testUpdateRestaurant_Failure_NotFound() throws Exception {
         int missingId = 9999;
         ApiCreateRestaurantDto body = new ApiCreateRestaurantDto();
-        body.setName("Doesn't matter here");
+        body.setName("Doesn't matter");
 
         when(restaurantService.updateRestaurant(missingId, body)).thenReturn(Optional.empty());
 
@@ -131,5 +149,21 @@ public class RestaurantApiControllerTest {
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message",
                 org.hamcrest.Matchers.containsStringIgnoringCase("not found")));
+    }
+
+    @Test
+    @DisplayName("PUT /api/restaurants/{id} — 400 invalid payload")
+    public void testUpdateRestaurant_Failure_InvalidPayload() throws Exception {
+        int restaurantId = 1;
+        ApiCreateRestaurantDto bad = new ApiCreateRestaurantDto(); // missing fields
+
+        mockMvc.perform(
+                MockMvcRequestBuilders.put("/api/restaurants/{id}", restaurantId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(bad))
+        )
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message",
+                org.hamcrest.Matchers.containsStringIgnoringCase("invalid")));
     }
 }
